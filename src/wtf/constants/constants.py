@@ -1,0 +1,1 @@
+TERMINAL_PROMPT_END_MARKER = "(wtf): "

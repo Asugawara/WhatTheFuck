@@ -1,0 +1,100 @@
+[project]
+name = "wtf-cli"
+version = "0.1.0"
+description = "WTF is a command-line tool that leverages LLMs to correct and enhance previously executed terminal commands. "
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic-haystack>=1.2.1",
+    "google-vertex-haystack>=4.0.1",
+    "haystack-ai>=2.8.0",
+    "logzero>=1.7.0",
+    "pyte>=0.8.2",
+    "rich>=13.9.4",
+]
+authors = [{name="Asugawara", email="asgasw@gmail.com"}]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/Asugawara/WhatTheFuck"
+Repository = "https://github.com/Asugawara/WhatTheFuck"
+
+
+[project.scripts]
+wtf = "wtf.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wtf"]
+
+[tool.ruff]
+line-length = 120
+src = ["src"]
+exclude = ["tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
+  "F",  # pyflakes
+  "I",  # isort
+  "C4",  # flake8-comprehensions
+  "B",  # flake8-bugbear
+  "TCH",  # flake8-type-checking
+  "TID",  # flake8-tidy-imports
+  "SIM", # flake8-simplify
+  "Q", # flake8-quotes
+  "PIE", # flake8-pie
+  "UP",  # pyupgrade
+  "PT",  # flake8-pytest-style
+  "C90",  # mccabe
+  "PYI026",  # type-alias-without-annotation
+  "PYI042",  # snake-case-type-alias
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+
+[tool.mypy]
+files = [
+    "src",
+]
+strict = true
+pretty = true
+ignore_missing_imports = true
+
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-vv"
+
+
+[dependency-groups]
+dev = [
+    "mypy>=1.14.0",
+    "pre-commit>=4.0.1",
+    "pytest>=8.3.4",
+    "ruff>=0.8.4",
+]
