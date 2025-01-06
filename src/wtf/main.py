@@ -7,7 +7,7 @@ import time
 from dataclasses import asdict, dataclass
 
 import logzero
-from haystack.dataclasses import StreamingChunk
+from haystack.dataclasses.streaming_chunk import StreamingChunk
 from logzero import logger
 from rich.console import Console
 from rich.markdown import Markdown
@@ -110,10 +110,12 @@ def main() -> None:
     logzero.loglevel(getattr(logging, args.loglevel.upper(), logging.INFO))
 
     config = Config.from_file() if Config.exists_config_file() else Config()
+    config.save()
     if args.model is not None:
         config_dict = asdict(config)
         config_dict["model"] = args.model
         config = Config(**config_dict)
+        config.validate()
         logger.info("Default model is set to `%s`", args.model)
 
     if args.cmd == "clean":
@@ -121,8 +123,10 @@ def main() -> None:
     elif args.cmd == "config":
         if args.edit:
             config = config.edit()
+        config.validate()
         config.display()
     else:
+        config.validate()
         wtf = WhatTheFuck.from_config(config)
         wtf.run()
 

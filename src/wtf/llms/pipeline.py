@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from haystack import Pipeline
 from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
-from haystack.dataclasses import StreamingChunk
+from haystack.dataclasses.streaming_chunk import StreamingChunk
 from haystack.utils import Secret
 from haystack_integrations.components.generators.anthropic import AnthropicGenerator
 from haystack_integrations.components.generators.google_vertex import VertexAIGeminiGenerator

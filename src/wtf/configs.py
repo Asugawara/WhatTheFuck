@@ -26,7 +26,7 @@ class Config:
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
-    def __post_init__(self) -> None:
+    def validate(self) -> None:
         if self.terminal_prompt_lines < 1:
             raise ValueError("Terminal prompt lines should be greater than 0")
 
@@ -37,10 +37,18 @@ class Config:
             raise ValueError(f"Model `{self.model}` is not supported")
 
         if self.model in OPENAI_MODELS and not self.openai_api_key:
-            raise ValueError("OpenAI API key is required for OpenAI models")
+            raise ValueError(
+                f"OpenAI API key is required for OpenAI models: {self.model}\n"
+                "Please set the OPENAI_API_KEY environment variable or "
+                "`wtf config --edit`"
+            )
 
         if self.model in ANTHROPIC_MODELS and not self.anthropic_api_key:
-            raise ValueError("Anthropic API key is required for Anthropic models")
+            raise ValueError(
+                f"Anthropic API key is required for Anthropic models: {self.model}\n"
+                "Please set the ANTHROPIC_API_KEY environment variable or "
+                "`wtf config --edit`"
+            )
 
         if not os.path.exists(self.prompt_path):
             raise FileNotFoundError(f"Prompt file not found at {self.prompt_path}")
@@ -61,12 +69,13 @@ class Config:
         console.print(table)
 
     def save(self) -> None:
+        os.makedirs(os.path.dirname(WTF_CONFIG_PATH), exist_ok=True)
         with open(WTF_CONFIG_PATH, "w") as f:
             json.dump(asdict(self), f, indent=4)
 
     def edit(self) -> "Config":
         if not self.exists_config_file():
-            self.save()
+            raise FileNotFoundError(f"{WTF_CONFIG_PATH} not found")
         editor = os.getenv("EDITOR", "vim")
         config = self.from_file()
         try:
@@ -86,4 +95,9 @@ class Config:
     @classmethod
     def from_file(cls, config_file: str = WTF_CONFIG_PATH) -> "Config":
         with open(config_file) as f:
-            return cls(**json.load(f))
+            config_dict = json.load(f)
+        if not config_dict["openai_api_key"]:
+            config_dict["openai_api_key"] = os.getenv("OPENAI_API_KEY", "")
+        if not config_dict["anthropic_api_key"]:
+            config_dict["anthropic_api_key"] = os.getenv("ANTHROPIC_API_KEY", "")
+        return cls(**config_dict)

@@ -1,10 +1,12 @@
 import hashlib
 import os
+import platform
 import subprocess
 from dataclasses import dataclass
 from shutil import get_terminal_size
 
 import pyte
+from logzero import logger
 
 from wtf.command_output_loggers.base import CommandOutput, CommandOutputLoggerBase
 from wtf.constants.constants import TERMINAL_PROMPT_END_MARKER
@@ -20,7 +22,14 @@ class ScriptCmdLogger(CommandOutputLoggerBase):
         return hashlib.sha256(self.logfile.encode()).hexdigest()
 
     def begin(self) -> None:
-        subprocess.run(["script", "-q", "-F", self.logfile])
+        platform_system = platform.system()
+        logger.debug("Platform system: %s", platform_system)
+        if platform_system == "Darwin":
+            subprocess.run(["script", "-q", "-F", self.logfile])
+        elif platform_system == "Linux":
+            subprocess.run(["script", "-q", "-f", self.logfile])
+        else:
+            raise NotImplementedError("Only Unix-like systems are supported")
 
     def is_available(self) -> bool:
         return os.path.exists(self.logfile)
