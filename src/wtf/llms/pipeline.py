@@ -2,13 +2,10 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from haystack import Pipeline
 from haystack.components.builders.prompt_builder import PromptBuilder
-from haystack.components.generators import OpenAIGenerator
+from haystack.core.pipeline import Pipeline
 from haystack.dataclasses.streaming_chunk import StreamingChunk
-from haystack.utils import Secret
-from haystack_integrations.components.generators.anthropic import AnthropicGenerator
-from haystack_integrations.components.generators.google_vertex import VertexAIGeminiGenerator
+from haystack.utils.auth import Secret
 
 from wtf.constants.models import ANTHROPIC_MODELS, OPENAI_MODELS, VERTEX_MODELS
 
@@ -36,20 +33,28 @@ class CommandOutputAnalyzer:
         self._anthropic_api_key = Secret.from_token(anthropic_api_key) if anthropic_api_key else ""
         self._streaming_callback = streaming_callback
 
-    def _factory_generator(self) -> OpenAIGenerator | AnthropicGenerator:
+    def _factory_generator(self):  # type: ignore
         if self._model in OPENAI_MODELS:
+            # NOTE: haystack modules are very slow to import.
+            # To optimize, avoid importing unused modules and use lazy imports for the necessary ones.
+            from haystack.components.generators import OpenAIGenerator
+
             return OpenAIGenerator(
                 api_key=self._openai_api_key,
                 model=self._model,
                 streaming_callback=self._streaming_callback,
             )
         elif self._model in ANTHROPIC_MODELS:
+            from haystack_integrations.components.generators.anthropic import AnthropicGenerator
+
             return AnthropicGenerator(
                 api_key=self._anthropic_api_key,
                 model=self._model,
                 streaming_callback=self._streaming_callback,
             )
         elif self._model in VERTEX_MODELS:
+            from haystack_integrations.components.generators.google_vertex import VertexAIGeminiGenerator
+
             return VertexAIGeminiGenerator(
                 model=self._model,
                 streaming_callback=self._streaming_callback,
@@ -60,7 +65,7 @@ class CommandOutputAnalyzer:
     def _build_pipeline(self) -> Pipeline:
         pipe = Pipeline()
         pipe.add_component("command_output_prompt_builder", PromptBuilder(template=self._prompt))
-        pipe.add_component("command_output_analyzer", self._factory_generator())
+        pipe.add_component("command_output_analyzer", self._factory_generator())  # type: ignore[no-untyped-call]
         pipe.connect("command_output_prompt_builder", "command_output_analyzer")
         return pipe
 

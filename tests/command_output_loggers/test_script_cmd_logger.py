@@ -1,4 +1,5 @@
 import hashlib
+import platform
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -21,7 +22,11 @@ def test_session_name(script_cmd_logger):
 @patch("subprocess.run")
 def test_begin(mock_subprocess_run, script_cmd_logger):
     script_cmd_logger.begin()
-    mock_subprocess_run.assert_called_once_with(["script", "-q", "-F", "test_logfile.log"])
+    platform_system = platform.system()
+    if platform_system == "Darwin":
+        mock_subprocess_run.assert_called_once_with(["script", "-q", "-F", "test_logfile.log"])
+    elif platform_system == "Linux":
+        mock_subprocess_run.assert_called_once_with(["script", "-q", "-f", "test_logfile.log"])
 
 
 @patch(
