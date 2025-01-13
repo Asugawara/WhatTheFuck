@@ -4,7 +4,7 @@ import os
 import shutil
 import subprocess
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 import logzero
 from haystack.dataclasses.streaming_chunk import StreamingChunk
@@ -90,30 +90,35 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="cmd")
     parser_clean = subparsers.add_parser("clean")  # noqa
     parser_config = subparsers.add_parser("config")
+    parser_config.add_argument("-i", "--init", action="store_true")
     parser_config.add_argument("-e", "--edit", action="store_true")
     parser.add_argument("-l", "--loglevel", choices=["debug", "info"], default="info")
     parser.add_argument("-m", "--model", choices=ALL_MODELS)
     args = parser.parse_args()
     logzero.loglevel(getattr(logging, args.loglevel.upper(), logging.INFO))
 
-    config = Config.from_file() if Config.exists_config_file() else Config()
-    config.save()
+    if not Config.exists_config_file():
+        Config().save()
+    config = Config.from_file()
     if args.model is not None:
-        config_dict = asdict(config)
+        config_dict = config.model_dump()
         config_dict["model"] = args.model
-        config = Config(**config_dict)
-        config.validate()
+        config = Config.model_validate(config_dict)
+        config.validate_config()
         logger.info("Default model is set to `%s`", args.model)
 
     if args.cmd == "clean":
         shutil.rmtree(config.logdir, ignore_errors=True)
     elif args.cmd == "config":
+        if args.init:
+            config = Config()
+            config.save()
         if args.edit:
             config = config.edit()
-        config.validate()
+            config.validate_config()
         config.display()
     else:
-        config.validate()
+        config.validate_config()
         wtf = WhatTheFuck.from_config(config)
         wtf.run()
 

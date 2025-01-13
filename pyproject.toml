@@ -1,6 +1,6 @@
 [project]
 name = "wtf-cli"
-version = "0.1.1"
+version = "0.1.2"
 description = "WTF is a command-line tool that leverages LLMs to correct and enhance previously executed terminal commands. "
 readme = "README.md"
 requires-python = ">=3.10"
