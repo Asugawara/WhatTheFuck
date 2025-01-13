@@ -9,8 +9,6 @@ from dataclasses import asdict, dataclass
 import logzero
 from haystack.dataclasses.streaming_chunk import StreamingChunk
 from logzero import logger
-from rich.console import Console
-from rich.markdown import Markdown
 from rich.prompt import Prompt
 
 from wtf.command_output_loggers import factroy_command_output_logger
@@ -47,22 +45,13 @@ class WhatTheFuck:
         command_output = command_outputs[-1]
 
         logger.debug("Last command: %s", last_command)
-        logger.debug("Last command output: \n%s", command_output.output)
+        logger.debug("Last command output: \n%s\n", command_output.output)
         llm_output = self.pipeline.run(command=last_command, command_output=command_output.output)
-        console = Console()
-        console.clear()
-        console.print(
-            Markdown(
-                llm_output.content,
-                code_theme="monokai",
-                inline_code_theme="monokai",
-                inline_code_lexer="python",
-            )
-        )
         if llm_output.fixed_command:
-            confirmation = Prompt.ask(f"Run `{llm_output.fixed_command}`?", choices=["y", "N"])
+            confirmation = Prompt.ask(f"\n\nRun `{llm_output.fixed_command}`?", choices=["y", "N"])
             if confirmation == "y":
                 res = subprocess.run(llm_output.fixed_command, shell=True, capture_output=True)
+                print(llm_output.fixed_command)
                 print(res.stdout.decode())
 
     @classmethod
@@ -82,10 +71,8 @@ class WhatTheFuck:
         with open(config.prompt_path) as f:
             prompt_template = f.read()
 
-        stderr_console = Console(stderr=True)
-
         def streaming_callback(chunk: StreamingChunk) -> None:
-            stderr_console.print(chunk.content, end="")
+            print(chunk.content, end="", flush=True)
 
         cmd_output_analyzer = CommandOutputAnalyzer(
             prompt_template,
