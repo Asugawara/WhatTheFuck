@@ -2,12 +2,8 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from haystack.components.builders.prompt_builder import PromptBuilder
-from haystack.core.pipeline import Pipeline
-from haystack.dataclasses.streaming_chunk import StreamingChunk
-from haystack.utils.auth import Secret
-
 from wtf.constants.models import ANTHROPIC_MODELS, OPENAI_MODELS, VERTEX_MODELS
+from wtf.llms.lazy_haystack import LazyHaystack, StreamingChunk
 
 RE_FIXED_COMMAND = re.compile(r"<FIXED>(.*)</FIXED>", re.IGNORECASE | re.DOTALL)
 
@@ -29,31 +25,31 @@ class CommandOutputAnalyzer:
     ) -> None:
         self._prompt = prompt
         self._model = model
-        self._openai_api_key = Secret.from_token(openai_api_key) if openai_api_key else ""
-        self._anthropic_api_key = Secret.from_token(anthropic_api_key) if anthropic_api_key else ""
+        self._openai_api_key = openai_api_key
+        self._anthropic_api_key = anthropic_api_key
         self._streaming_callback = streaming_callback
 
     def _factory_generator(self):  # type: ignore
         if self._model in OPENAI_MODELS:
             # NOTE: haystack modules are very slow to import.
             # To optimize, avoid importing unused modules and use lazy imports for the necessary ones.
-            from haystack.components.generators import OpenAIGenerator
-
+            OpenAIGenerator = LazyHaystack.import_openai_generator()  # type: ignore
+            Secret = LazyHaystack.import_secret()  # type: ignore
             return OpenAIGenerator(
-                api_key=self._openai_api_key,
+                api_key=Secret.from_token(self._openai_api_key),
                 model=self._model,
                 streaming_callback=self._streaming_callback,
             )
         elif self._model in ANTHROPIC_MODELS:
-            from haystack_integrations.components.generators.anthropic import AnthropicGenerator
-
+            AnthropicGenerator = LazyHaystack.import_anthropic_generator()  # type: ignore
+            Secret = LazyHaystack.import_secret()  # type: ignore
             return AnthropicGenerator(
-                api_key=self._anthropic_api_key,
+                api_key=Secret.from_token(self._anthropic_api_key),
                 model=self._model,
                 streaming_callback=self._streaming_callback,
             )
         elif self._model in VERTEX_MODELS:
-            from haystack_integrations.components.generators.google_vertex import VertexAIGeminiGenerator
+            VertexAIGeminiGenerator = LazyHaystack.import_vertex_ai_gemini_generator()  # type: ignore
 
             return VertexAIGeminiGenerator(
                 model=self._model,
@@ -62,7 +58,10 @@ class CommandOutputAnalyzer:
         else:
             raise NotImplementedError(f"Model {self._model} is not supported")
 
-    def _build_pipeline(self) -> Pipeline:
+    def _build_pipeline(self):  # type: ignore
+        Pipeline = LazyHaystack.import_pipeline()  # type: ignore
+        PromptBuilder = LazyHaystack.import_prompt_builder()  # type: ignore
+
         pipe = Pipeline()
         pipe.add_component("command_output_prompt_builder", PromptBuilder(template=self._prompt))
         pipe.add_component("command_output_analyzer", self._factory_generator())  # type: ignore[no-untyped-call]
@@ -76,7 +75,7 @@ class CommandOutputAnalyzer:
         return ""
 
     def run(self, command: str, command_output: str) -> LLMOutput:
-        pipeline = self._build_pipeline()
+        pipeline = self._build_pipeline()  # type: ignore
         result = pipeline.run(
             {
                 "command_output_prompt_builder": {
