@@ -3,7 +3,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from wtf.constants.models import ANTHROPIC_MODELS, OPENAI_MODELS, VERTEX_MODELS
-from wtf.llms.lazy_haystack import LazyHaystack, StreamingChunk
+from wtf.pipelines.lazy_haystack import LazyHaystack, StreamingChunk
 
 RE_FIXED_COMMAND = re.compile(r"<FIXED>(.*)</FIXED>", re.IGNORECASE | re.DOTALL)
 

@@ -14,8 +14,8 @@ from wtf.command_output_loggers import factroy_command_output_logger
 from wtf.command_output_loggers.base import CommandOutputLoggerBase
 from wtf.configs import Config
 from wtf.constants.models import ALL_MODELS
-from wtf.llms.lazy_haystack import StreamingChunk
-from wtf.llms.pipeline import CommandOutputAnalyzer
+from wtf.pipelines.lazy_haystack import StreamingChunk
+from wtf.pipelines.pipeline import CommandOutputAnalyzer
 from wtf.shells import factroy_shell
 from wtf.shells.base import ShellBase
 
