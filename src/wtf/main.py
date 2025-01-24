@@ -14,8 +14,8 @@ from wtf.command_output_loggers import factroy_command_output_logger
 from wtf.command_output_loggers.base import CommandOutputLoggerBase
 from wtf.configs import Config
 from wtf.constants.models import ALL_MODELS
-from wtf.pipelines.lazy_haystack import StreamingChunk
-from wtf.pipelines.pipeline import CommandOutputAnalyzer
+from wtf.pipelines import factroy_pipeline
+from wtf.pipelines.base import PipelineBase
 from wtf.shells import factroy_shell
 from wtf.shells.base import ShellBase
 
@@ -24,7 +24,7 @@ from wtf.shells.base import ShellBase
 class WhatTheFuck:
     command_output_logger: CommandOutputLoggerBase
     shell: ShellBase
-    pipeline: CommandOutputAnalyzer
+    pipeline: PipelineBase
 
     def run(self) -> None:
         session_name = self.command_output_logger.session_name
@@ -55,7 +55,7 @@ class WhatTheFuck:
                 print(res.stdout.decode())
 
     @classmethod
-    def from_config(cls, config: Config) -> "WhatTheFuck":
+    def from_config(cls, config: Config, with_websearch: bool = False) -> "WhatTheFuck":
         logfile = os.getenv(config.logfile_env_var, "")
         if not os.path.exists(logfile):
             logfile = os.path.join(config.logdir, f"{time.time_ns()}.log")
@@ -67,19 +67,16 @@ class WhatTheFuck:
             config.command_output_logger, logfile, config.terminal_prompt_lines
         )
         shell = factroy_shell()
-
-        with open(config.prompt_path) as f:
-            prompt_template = f.read()
-
-        def streaming_callback(chunk: StreamingChunk) -> None:
-            print(chunk.content, end="", flush=True)
-
-        cmd_output_analyzer = CommandOutputAnalyzer(
-            prompt_template,
+        cmd_output_analyzer = factroy_pipeline(
+            config.websearch_config.prompt_with_websearch_path if with_websearch else config.prompt_path,
             config.model,
-            config.openai_api_key,
-            config.anthropic_api_key,
-            streaming_callback=streaming_callback,
+            openai_api_key=config.openai_api_key,
+            anthropic_api_key=config.anthropic_api_key,
+            with_websearch=with_websearch,
+            search_query_prompt_path=config.websearch_config.search_query_prompt_path,
+            allowed_domains=config.websearch_config.allowed_domains,
+            use_playwright=config.websearch_config.use_playwright,
+            serper_api_key=config.websearch_config.serper_api_key,
         )
 
         return cls(cmd_output_logger, shell, cmd_output_analyzer)
@@ -94,6 +91,7 @@ def main() -> None:
     parser_config.add_argument("-e", "--edit", action="store_true")
     parser.add_argument("-l", "--loglevel", choices=["debug", "info"], default="info")
     parser.add_argument("-m", "--model", choices=ALL_MODELS)
+    parser.add_argument("-w", "--websearch", action="store_true")
     args = parser.parse_args()
     logzero.loglevel(getattr(logging, args.loglevel.upper(), logging.INFO))
 
@@ -119,7 +117,7 @@ def main() -> None:
         config.display()
     else:
         config.validate_config()
-        wtf = WhatTheFuck.from_config(config)
+        wtf = WhatTheFuck.from_config(config, args.websearch)
         wtf.run()
 
 

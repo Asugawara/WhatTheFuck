@@ -75,3 +75,9 @@ class LazyHaystack:
         from wtf.pipelines.components.websearch import WebSearch
 
         return WebSearch
+
+    @staticmethod
+    def import_serper_websearch():
+        from haystack.components.websearch import SerperDevWebSearch
+
+        return SerperDevWebSearch

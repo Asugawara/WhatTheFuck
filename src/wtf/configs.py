@@ -15,6 +15,21 @@ from wtf.constants.models import ALL_MODELS, ANTHROPIC_MODELS, OPENAI_MODELS
 WTF_CONFIG_PATH = os.path.expanduser("~/.config/wtf/config.json")
 
 
+class WebsearchConfig(BaseModel, frozen=True):
+    allowed_domains: tuple[str, ...] | None = ("stackoverflow.com", "github.com", "docs.python.org")
+    max_urls: int = 5
+    prompt_with_websearch_path: str = os.path.join(os.path.dirname(__file__), "constants", "prompt_with_websearch.txt")
+    search_query_prompt_path: str = os.path.join(os.path.dirname(__file__), "constants", "prompt_for_search_query.txt")
+    use_playwright: bool = True
+    serper_api_key: str = os.getenv("SERPERDEV_API_KEY", "")
+
+    def validate_config(self) -> None:
+        if not self.use_playwright and not self.serper_api_key:
+            raise RuntimeError(
+                "Serper API key is required\n" "Please set the SERPER_API environment variable or `wtf config --edit`"
+            )
+
+
 class Config(BaseModel, frozen=True):
     logdir: str = os.path.expanduser("~/.config/wtf/log")
     logfile_env_var: str = "WTF_LOGGER_FILE"
@@ -24,6 +39,7 @@ class Config(BaseModel, frozen=True):
     prompt_path: str = os.path.join(os.path.dirname(__file__), "constants", "prompt.txt")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
+    websearch_config: WebsearchConfig = WebsearchConfig()
 
     def validate_config(self) -> None:
         if self.model not in ALL_MODELS:
@@ -46,6 +62,8 @@ class Config(BaseModel, frozen=True):
         if not os.path.exists(self.prompt_path):
             raise FileNotFoundError(f"Prompt file not found at {self.prompt_path}")
 
+        self.websearch_config.validate_config()
+
         self.save()
 
     def display(self) -> None:
@@ -58,7 +76,14 @@ class Config(BaseModel, frozen=True):
             v = getattr(self, field)
             if field in ("openai_api_key", "anthropic_api_key") and v:
                 v = "*" * 8
-            table.add_row(field, str(v), str(field_info.annotation))
+            if isinstance(v, WebsearchConfig):
+                for sub_field, sub_field_info in v.model_fields.items():
+                    sub_v = getattr(v, sub_field)
+                    if sub_field in ("serper_api_key",) and sub_v:
+                        sub_v = "*" * 8
+                    table.add_row(f"{field}.{sub_field}", str(sub_v), str(sub_field_info.annotation))
+            else:
+                table.add_row(field, str(v), str(field_info.annotation))
         console.print(table)
 
     def save(self) -> None:
