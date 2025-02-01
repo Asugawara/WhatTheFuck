@@ -28,6 +28,7 @@ Run `git branch`? [y/N]: y
 - **Instant Command Fixes**: Detect and fix incorrect terminal commands effortlessly.
 - **One-Click Execution**: Run corrected commands seamlessly.
 - **Log Summarization**: Summarize logs from previous terminal commands for quick insights.
+- **Web Search Integration**: Perform real-time web searches to gather relevant information or troubleshoot issues directly from the tool.
 
 > [!NOTE]
 > WTF utilizes [`script(Unix)`](https://en.wikipedia.org/wiki/Script_(Unix)) to log and analyze the previously executed command.
