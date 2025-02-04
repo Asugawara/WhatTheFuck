@@ -40,12 +40,12 @@ class FishShell(ShellBase):
             f.write(
                 dedent(
                     f"""
-            functions -c fish_prompt _original_fish_prompt
-            function fish_prompt
-                _original_fish_prompt
-                printf '{TERMINAL_PROMPT_END_MARKER}'
-            end
-            """
+                    functions -c fish_prompt _original_fish_prompt
+                    function fish_prompt
+                        _original_fish_prompt
+                        printf '{TERMINAL_PROMPT_END_MARKER}'
+                    end
+                    """
                 )
             )
 
@@ -64,7 +64,9 @@ class FishShell(ShellBase):
         session_history_file = os.path.join(head, tail.replace("fish", session_name))
         if os.path.exists(session_history_file):
             os.remove(session_history_file)
-        shutil.rmtree(os.path.join(self.TMP_CONFIG_DIR, "fish"))
+        tmp_dir = os.path.join(self.TMP_CONFIG_DIR, "fish")
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)
 
     def get_terminal_prompt(self) -> str:
         fish_prompt = subprocess.run([os.getenv("SHELL", "fish"), "-c", "fish_prompt"], capture_output=True)

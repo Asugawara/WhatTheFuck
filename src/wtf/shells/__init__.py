@@ -14,4 +14,4 @@ def factroy_shell() -> ShellBase:
         return FishShell()
     if shell_path.endswith("zsh"):
         return ZshShell()
-    raise NotImplementedError("Only `bash` or `fish` shell are supported")
+    raise NotImplementedError("Only `bash`, `fish` and `zsh` shell are supported")

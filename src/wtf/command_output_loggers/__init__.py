@@ -19,4 +19,4 @@ def factroy_command_output_logger(
     elif logger_name == "tmux":
         return TmuxCmdLogger(logfile=logfile, terminal_prompt_lines=terminal_prompt_lines)
     else:
-        raise NotImplementedError("Only `script(Unix)` and `pty(Python built-in)` are supported")
+        raise NotImplementedError("Only `script(Unix)`, `pty(Python built-in)`, `screen` and `tmux` are supported")
